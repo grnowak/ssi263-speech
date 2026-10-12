@@ -50,7 +50,7 @@ void blx_report_free(blx_report *r);
 unsigned char *blx_export(const blf_fs *fs, int model, unsigned long *size, blx_report *r, char *err, int errlen);
 /* the image's files into the unit (its images changed in place); 1, or 0 when nothing could be done (the image
    unreadable, the unit's file system not set up), the reason in err.  Files refused one by one are in the report. */
-int blx_import(blf_fs *fs, const unsigned char *img, unsigned long size, blx_report *r, char *err, int errlen);
+  int blx_import(blf_fs *fs, const unsigned char *img, unsigned long size, int keep_exact, blx_report *r, char *err, int errlen );
 
 /* A unit name or folder name (its bytes: ASCII, and the units' code page 850 above 7Fh) as UTF-8, and back (a
    character the code page lacks becomes '_'). */
@@ -64,7 +64,7 @@ void blx_utf8_to_unit(const char *utf8, char *out, size_t cap);
 #define BLX_CP852 852
 unsigned char *blx_export_cp(const blf_fs *fs, int model, int codepage, unsigned long *size, blx_report *r, char *err,
                              int errlen);
-int blx_import_cp(blf_fs *fs, int codepage, const unsigned char *img, unsigned long size, blx_report *r, char *err,
+  int blx_import_cp(blf_fs *fs, int codepage, const unsigned char *img, unsigned long size, int keep_exact, blx_report *r, char *err,
                   int errlen);
 void blx_unit_to_utf8_cp(int codepage, const char *unit, char *out, size_t cap);
 void blx_utf8_to_unit_cp(int codepage, const char *utf8, char *out, size_t cap);
