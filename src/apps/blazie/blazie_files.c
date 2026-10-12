@@ -5,7 +5,7 @@
  *
  *   blazie_files list STATE                    the files, their folders and sizes, the free space
  *   blazie_files export STATE IMAGE.img         every file into a FAT disk image (7-Zip opens it; Linux mounts it)
- *   blazie_files import STATE IMAGE.img [--dry-run]   the unit's files made what the image holds (bl_files_xfer.h)
+ *   blazie_files import STATE IMAGE.img [--dry-run] [--keep-exact]   the unit's files made what the image holds (bl_files_xfer.h)
  *   blazie_files extract STATE DIR [--crlf]     every file into DIR/<folder>/<name>; --crlf: text files with CR LF
  *                                               line ends, for a PC editor (the image keeps the unit's CR)
  *   blazie_files check STATE                    the file system's rules, checked
@@ -164,7 +164,7 @@ static int usage(void)
 {
     printf("usage: blazie_files list|check STATE\n"
            "       blazie_files export STATE IMAGE.img\n"
-           "       blazie_files import STATE IMAGE.img [--dry-run]\n"
+           "       blazie_files import STATE IMAGE.img [--dry-run] [--keep-exact]\n"
            "       blazie_files extract STATE DIR [--crlf]\n"
            "       blazie_files unpack IMAGE.img DIR\n"
            "       blazie_files pack DIR IMAGE.img\n"
@@ -372,6 +372,8 @@ int main(int argc, char **argv)
     bls_unit u;
     blf_fs *fs;
     char err[300];
+    int dry = 0;
+    int keep_exact = 0;
     int rc = 0;
     if (getenv("TEST_FILES_FAT_BREAK"))      /* run_tests' must-fail control for the 7-Zip check */
         fat_break = atoi(getenv("TEST_FILES_FAT_BREAK"));
@@ -434,12 +436,17 @@ int main(int argc, char **argv)
         blx_report r;
         unsigned long size;
         unsigned char *img = read_file(argv[3], &size);
-        int dry = argc >= 5 && !strcmp(argv[4], "--dry-run");
+    if (argc >= 5 && !strcmp(argv[4], "--keep-exact"))
+        keep_exact = argc >= 5 && !strcmp(argv[4], "--keep-exact");
+	if (argc >= 5 && !strcmp(argv[4], "--dry-run"))
+        dry = argc >= 5 && !strcmp(argv[4], "--dry-run");
+	if (argc >= 6 && !strcmp(argv[5], "--dry-run"))
+        dry = argc >= 6 && !strcmp(argv[5], "--dry-run");
         blx_report_init(&r);
         if (!img) {
             printf("cannot read %s\n", argv[3]);
             rc = 1;
-        } else if (!blx_import_cp(fs, g_cp, img, size, &r, err, sizeof err)) {
+        } else if (!blx_import_cp(fs, g_cp, img, size, keep_exact, &r, err, sizeof err)) {
             printf("import failed: %s\n", err);
             rc = 1;
         } else {
@@ -447,9 +454,9 @@ int main(int argc, char **argv)
             if (!blf_check(fs, err, sizeof err)) {
                 printf("NOT saved: the result breaks the file system's rules (%s)\n", err);
                 rc = 1;
-            } else if (dry)
+	    } else if (dry)
                 printf("dry run, nothing saved: ");
-            else {
+	else {
                 char before[1200];                /* the unit as it was, kept beside it */
                 unsigned long bn;
                 unsigned char *old = read_file(argv[2], &bn);
