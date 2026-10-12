@@ -238,24 +238,24 @@ static int is_junk(const char *n)
     return 0;
 }
 
-/* CR LF and lone LF made CR, in place; the new length */
-static unsigned long to_unit_lines(unsigned char *d, unsigned long n)
+/* if keep_exact = 0, CR LF and lone LF made CR, in place; the new length */
+static unsigned long to_unit_lines(unsigned char *d, unsigned long n, int keep_exact)
 {
     unsigned long i, o = 0;
     for (i = 0; i < n; i++) {
-        if (d[i] == '\r' && i + 1 < n && d[i + 1] == '\n') { d[o++] = '\r'; i++; }
+        if (d[i] == '\r' && i + 1 < n && d[i + 1] == '\n' && keep_exact == 0) { d[o++] = '\r'; i++; }
         else if (d[i] == '\n') d[o++] = '\r';
         else d[o++] = d[i];
     }
     return o;
 }
 
-int blx_import(blf_fs *fs, const unsigned char *img, unsigned long size, blx_report *r, char *err, int errlen)
+int blx_import(blf_fs *fs, const unsigned char *img, unsigned long size, int keep_exact, blx_report *r, char *err, int errlen)
 {
-    return blx_import_cp(fs, BLX_CP850, img, size, r, err, errlen);
+  return blx_import_cp(fs, BLX_CP850, img, size, keep_exact, r, err, errlen);
 }
 
-int blx_import_cp(blf_fs *fs, int codepage, const unsigned char *img, unsigned long size, blx_report *r, char *err,
+int blx_import_cp(blf_fs *fs, int codepage, const unsigned char *img, unsigned long size, int keep_exact, blx_report *r, char *err,
                   int errlen)
 {
     fat_volume *v;
@@ -417,7 +417,7 @@ int blx_import_cp(blf_fs *fs, int codepage, const unsigned char *img, unsigned l
             int same = un == n && !memcmp(ud, data, n);
             int fkind = blf_folder_get(fs, w->folder)->type, same_kind = fkind == (x->in_flash ? 'f' : 'r');
             if (!same && (type == 'A' || type == 'B')) {
-                n = to_unit_lines(data, n);
+	      n = to_unit_lines(data, n, keep_exact);
                 same = un == n && !memcmp(ud, data, n);
             }
             if (same && x->folder == w->folder) {
@@ -458,7 +458,7 @@ int blx_import_cp(blf_fs *fs, int codepage, const unsigned char *img, unsigned l
             }
         }
         if (type == 'A' || type == 'B')
-            n = to_unit_lines(data, n);
+	  n = to_unit_lines(data, n, keep_exact);
         if (!n && blf_folder_get(fs, w->folder)->type == 'f') {
             say(r, "%s is empty: kept in %s (the unit keeps no empty file in flash)", w->path,
                 blf_folder_get(fs, 0)->name);
